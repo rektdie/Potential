@@ -1,11 +1,15 @@
 # Define make variables
 _THIS       := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+ifeq ("$(wildcard $(_THIS)/CMakeLists.txt)","")
+_ROOT       := $(abspath $(_THIS)/..)
+else
 _ROOT       := $(_THIS)
+endif
 TARGET      := Potential
 WARNINGS    = -Wall -Wextra -Wno-unused-variable
 CFLAGS      := -funroll-loops -fomit-frame-pointer -O3 -flto -fno-exceptions -DIS_64BIT -DNDEBUG $(WARNINGS)
 NATIVE      = -march=native
-EVALFILE    ?= $(abspath $(_ROOT)/../nnue.bin)
+EVALFILE    ?= $(abspath $(_ROOT)/nnue.bin)
 AVX2FLAGS   = -DUSE_AVX2 -DUSE_SIMD -mavx2 -mbmi
 BMI2FLAGS   = -DUSE_AVX2 -DUSE_SIMD -mavx2 -mbmi -mbmi2
 AVX512FLAGS = -DUSE_AVX512 -DUSE_SIMD -mavx512f -mavx512bw
