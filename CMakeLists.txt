@@ -13,6 +13,12 @@ set(CMAKE_C_FLAGS_RELEASE "-Ofast -march=native -ffast-math -fomit-frame-pointer
 # Source files
 include_directories(src)
 
+set(EVALFILE "${CMAKE_SOURCE_DIR}/nnue.bin" CACHE FILEPATH "NNUE file to embed with incbin")
+
+if(NOT EXISTS "${EVALFILE}")
+    message(FATAL_ERROR "NNUE file not found at ${EVALFILE}. Set EVALFILE to your nnue.bin path.")
+endif()
+
 add_executable(Potential
         src/potential.c
         src/uci.c src/uci.h src/structs.h
@@ -25,8 +31,10 @@ add_executable(Potential
         src/table.c src/table.h
         src/fen.c src/fen.h
         src/history.c src/history.h
-        src/time.c src/time.h
+        src/incbin.h
+        src/timeman.c src/timeman.h
         src/evaluation.c src/evaluation.h
+        src/nnue.c src/nnue.h
         src/values.h
         src/search.c src/search.h
         src/bench.c src/bench.h
@@ -34,4 +42,5 @@ add_executable(Potential
         src/see.c
         src/see.h)
 
+target_compile_definitions(Potential PRIVATE EVALFILE="${EVALFILE}")
 target_link_libraries(Potential m)
