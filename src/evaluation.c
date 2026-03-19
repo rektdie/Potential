@@ -4,6 +4,7 @@
 
 #include "evaluation.h"
 
+#include "nnue.h"
 #include "utils.h"
 
 
@@ -318,10 +319,7 @@ int get_piece_phase_score(uint8_t piece) {
 }
 
 
-int evaluate(board* position) {
-    const int game_phase_score = position->phase_score;
-    Score score = S(0, 0);
-    
+static void refresh_piece_threats(board *position) {
     position->pieceThreats.pawnThreats = 0;
     position->pieceThreats.knightThreats = 0;
     position->pieceThreats.bishopThreats = 0;
@@ -332,6 +330,11 @@ int evaluate(board* position) {
     position->pieceThreats.stmThreats[black] = 0;
 
     get_threats(position->side, position);
+}
+
+static int evaluate_classical(board* position) {
+    const int game_phase_score = position->phase_score;
+    Score score = S(0, 0);
 
     const int whiteKingSquare = getLS1BIndex(position->bitboards[K]);
     const int blackKingSquare = getLS1BIndex(position->bitboards[k]);    
@@ -394,6 +397,16 @@ int evaluate(board* position) {
     else final_score = (mg * game_phase_score + eg * (opening_phase_score - game_phase_score)) / opening_phase_score;
 
     return (position->side == white) ? final_score : -final_score;
+}
+
+int evaluate(board* position) {
+    refresh_piece_threats(position);
+
+    if (nnue_is_loaded()) {
+        return nnue_evaluate(position);
+    }
+
+    return evaluate_classical(position);
 }
 
 

@@ -3,6 +3,7 @@
 //
 
 #include "fen.h"
+#include "nnue.h"
 
 // parse FEN string
 void parseFEN(char *fen, board* position) {
@@ -118,5 +119,5 @@ void parseFEN(char *fen, board* position) {
     position->blackNonPawnKey = generate_black_np_hash_key(position);
     position->krpKey = generate_krp_key(position);
     position->phase_score = get_game_phase_score(position);
+    nnue_refresh_accumulators(position);
 }
-

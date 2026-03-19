@@ -5,6 +5,7 @@ TARGET      := Potential
 WARNINGS    = -Wall -Wextra -Wno-unused-variable
 CFLAGS      := -funroll-loops -fomit-frame-pointer -O3 -flto -fno-exceptions -DIS_64BIT -DNDEBUG $(WARNINGS)
 NATIVE      = -march=native
+EVALFILE    ?= $(abspath $(_ROOT)/../nnue.bin)
 AVX2FLAGS   = -DUSE_AVX2 -DUSE_SIMD -mavx2 -mbmi
 BMI2FLAGS   = -DUSE_AVX2 -DUSE_SIMD -mavx2 -mbmi -mbmi2
 AVX512FLAGS = -DUSE_AVX512 -DUSE_SIMD -mavx512f -mavx512bw
@@ -46,6 +47,13 @@ else
     SUFFIX  :=
     uname_S := $(shell uname -s)
 endif
+
+# Embed the NNUE into the executable with incbin.
+ifeq ("$(wildcard $(EVALFILE))","")
+$(error NNUE file not found at $(EVALFILE). Pass EVALFILE=/absolute/path/to/nnue.bin)
+endif
+
+CFLAGS += -DEVALFILE=\"$(EVALFILE)\"
 
 # Different native flag for macOS
 ifeq ($(uname_S), Darwin)

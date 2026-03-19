@@ -18,6 +18,22 @@
 #define maxPly 256
 #define MAX_THREADS 512
 
+enum {
+    NNUE_INPUT_SIZE = 768,
+    NNUE_HL_SIZE = 1536,
+    NNUE_OUTPUT_BUCKETS = 8,
+    NNUE_SCALE = 400,
+    NNUE_QA = 255,
+    NNUE_QB = 64
+};
+
+typedef struct {
+    int16_t white[NNUE_HL_SIZE];
+    int16_t black[NNUE_HL_SIZE];
+    bool mirroredWhite;
+    bool mirroredBlack;
+} NNUEAccumulatorPair;
+
 typedef struct  {
     uint64_t pawnThreats;
     uint64_t knightThreats;
@@ -45,6 +61,7 @@ typedef struct {
     int fifty;
     int full_moves;
     int phase_score;
+    NNUEAccumulatorPair nnue;
 
     U64 pinned[2];
     int ply;
@@ -84,6 +101,7 @@ struct copyposition {
     int fifty;
     int full_moves;
     int phase_score;
+    NNUEAccumulatorPair nnue;
 };
 
 // transposition table data structure

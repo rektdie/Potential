@@ -3,6 +3,7 @@
 //
 
 #include "uci.h"
+#include "nnue.h"
 #include "perft.h"
 #include "timeman.h"
 #include "datagen.h"
@@ -408,10 +409,13 @@ void check_node_limit(my_time* time, ThreadData* t) {
 void uciProtocol(int argc, char *argv[], board *position, my_time *time_ctrl) {
     //ThreadData *threads = init_threads(thread_count);
 
+    memset(position, 0, sizeof(*position));
+
     setup_main_thread(position);
 
     position->ply = 0;
     position->nmpPly = 0;
+    position->enpassant = no_sq;
 
 
     for (int i = 0; i < 64;i++) {
@@ -677,6 +681,24 @@ void uciProtocol(int argc, char *argv[], board *position, my_time *time_ctrl) {
             init_threads(thread_count);
             printf("info string set Threads to value %d\n", thread_count);
         }
+        else if (!strncmp(input, "setoption name EvalFile value ", 30)) {
+            char *path = input + 30;
+            path[strcspn(path, "\r\n")] = '\0';
+
+            while (*path == ' ') {
+                ++path;
+            }
+
+            if (*path == '\0') {
+                printf("info string EvalFile path is empty\n");
+            } else if (nnue_load(path)) {
+                nnue_refresh_accumulators(position);
+                setup_main_thread(position);
+                printf("info string loaded NNUE from %s\n", nnue_current_path());
+            } else {
+                printf("info string failed to load NNUE from %s\n", path);
+            }
+        }
         // parse UCI "quit" command
         else if (strncmp(input, "quit", 4) == 0) {
             // quit from the chess engine program executions
@@ -691,12 +713,17 @@ void uciProtocol(int argc, char *argv[], board *position, my_time *time_ctrl) {
             printf("option name Hash type spin default %d min 4 max %d\n",
                    default_hash_size, max_hash);
             printf("option name Threads type spin default 1 min 1 max %d\n", MAX_THREADS);
+            printf("option name EvalFile type string default <auto>\n");
             printf("uciok\n");
         } 
         
         else if (strncmp(input, "eval", 4) == 0) {
             printf("Evaluation: %d\n", evaluate(position));
         } 
+
+        else if (strncmp(input, "nnue", 4) == 0) {
+            printf("Final eval: %d\n", evaluate(position));
+        }
 
         else if (strncmp(input, "perftsuite", 10) == 0) {
             perftSuite();

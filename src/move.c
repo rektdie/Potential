@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "move.h"
 #include "fen.h"
+#include "nnue.h"
 
 #if __AVX512VBMI2__
 #include <immintrin.h>
@@ -158,12 +159,40 @@ int makeMove(uint16_t move, int moveFlag, board* position) {
     int castling = getMoveCastling(move);
     int piece = position->mailbox[sourceSquare];
     int capturedPiece = position->mailbox[targetSquare];
+    int movedPiece = promote ? promotedPiece : piece;
 
     // increment fifty move rule counter
     position->fifty++;
 
     if (piece == P || piece == p) {
         position->fifty = 0; // reset fifty move rule counter
+    }
+
+    if (capture) {
+        if (enpass) {
+            nnue_acc_add_sub_sub(position, position->side, targetSquare, movedPiece, sourceSquare, piece,
+                                 position->side == white ? targetSquare + 8 : targetSquare - 8,
+                                 position->side == white ? p : P);
+        } else {
+            nnue_acc_add_sub_sub(position, position->side, targetSquare, movedPiece, sourceSquare, piece, targetSquare, capturedPiece);
+        }
+    } else if (castling) {
+        switch (targetSquare) {
+            case g1:
+                nnue_acc_add_add_sub_sub(position, position->side, g1, K, f1, R, e1, K, h1, R);
+                break;
+            case c1:
+                nnue_acc_add_add_sub_sub(position, position->side, c1, K, d1, R, e1, K, a1, R);
+                break;
+            case g8:
+                nnue_acc_add_add_sub_sub(position, position->side, g8, k, f8, r, e8, k, h8, r);
+                break;
+            case c8:
+                nnue_acc_add_add_sub_sub(position, position->side, c8, k, d8, r, e8, k, a8, r);
+                break;
+        }
+    } else {
+        nnue_acc_add_sub(position, position->side, targetSquare, movedPiece, sourceSquare, piece);
     }
 
     // handling capture moves
@@ -244,6 +273,11 @@ int makeMove(uint16_t move, int moveFlag, board* position) {
                 addPiece(position, r, d8);
                 break;
         }
+    }
+
+    if ((piece == K || piece == k) &&
+        (((targetSquare % 8) > 3) != (piece == K ? position->nnue.mirroredWhite : position->nnue.mirroredBlack))) {
+        nnue_refresh_accumulators(position);
     }
 
     // hash castling
@@ -852,5 +886,4 @@ U64 knight_threats (U64 knightBB) {
                    (knightBB & not1RankAndABFile)  << 6  ;    
     return attacks;
 }
-
 

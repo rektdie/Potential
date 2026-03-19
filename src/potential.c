@@ -11,6 +11,7 @@
 #include "move.h"
 #include "table.h"
 #include "fen.h"
+#include "nnue.h"
 #include "perft.h"
 #include "see.h"
 #include "generate_fen.h"
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
     init_threads(1);
 
     initAll();
+    nnue_init(argc > 0 ? argv[0] : NULL);
     int debug = 0;
     if (debug) {
         board position;
