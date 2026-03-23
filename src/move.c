@@ -33,6 +33,36 @@ bool isTactical(uint16_t move) {
     return getMoveCapture(move) || getMovePromote(move);
 }
 
+void calcCheckZones(board* position) {
+    uint8_t opponent_king_square = getLS1BIndex(position->bitboards[position->side == white ? k : K]);
+
+    position->checkZones[0] = pawnAttacks[!position->side][opponent_king_square];
+    position->checkZones[1] = knightAttacks[opponent_king_square];
+    position->checkZones[2] = getBishopAttacks(opponent_king_square, position->occupancies[both]);
+    position->checkZones[3] = getRookAttacks(opponent_king_square, position->occupancies[both]);
+}
+
+bool givesDirectCheck(uint16_t move, board* position) {
+    // attacker piece source square
+    uint8_t sourceSquare = getMoveSource(move);
+    // attacker piece target square
+    uint8_t targetSquare = getMoveTarget(move);
+    // attacker piece type
+    uint8_t piece_type = getMovePromote(move) ? getMovePromotedPiece(position->side, move) : position->mailbox[sourceSquare];
+
+    if (piece_type == K || piece_type == k) return false;
+
+    U64 checkZone = 0ULL;
+
+    if (piece_type == Q || piece_type == q) {
+        checkZone = position->checkZones[B] | position->checkZones[R];
+    } else {
+        checkZone = position->checkZones[piece_type % 6]; // % 6 maps to only uppercase -> checkzones are indexed 0->3 (we excluded king and queen already)
+    }
+
+    return checkZone & (1ULL << targetSquare);
+}
+
 
 void copyBoard(board *p, struct copyposition *cp) {
     memcpy(cp, p, sizeof(struct copyposition));
@@ -272,6 +302,8 @@ int makeMove(uint16_t move, int moveFlag, board* position) {
 
     // increment full moves counter
     position->full_moves += position->side == black;
+
+    calcCheckZones(position);
 
     return 1;
 }

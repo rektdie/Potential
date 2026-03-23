@@ -55,6 +55,8 @@ typedef struct {
     U64 repetitionTable[1000];
     int repetitionIndex;
 
+    U64 checkZones[4];
+
     int pvLength[maxPly];
     int pvTable[maxPly][maxPly];
     threats pieceThreats;
@@ -78,6 +80,7 @@ struct copyposition {
     U64 blackNonPawnKey;
     U64 krpKey;
     uint8_t mailbox[64];
+    U64 checkZones[4];
     int side;
     int castle;
     int enpassant;
